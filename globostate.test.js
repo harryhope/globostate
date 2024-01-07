@@ -5,8 +5,8 @@ import React from 'react'
 import { render, fireEvent, getNodeText } from '@testing-library/react'
 import { Provider, useGloboState } from './index'
 
-const Counter = props => {
-  const [value, updateValue] = useGloboState('app.counterValue', 0, props.options)
+const Counter = () => {
+  const [value, updateValue] = useGloboState('app.counterValue', 0)
   const [, updateAll] = useGloboState('app', {})
   return (
     <main>
@@ -18,7 +18,7 @@ const Counter = props => {
   )
 }
 
-const TodoList = props => {
+const TodoList = () => {
   const [list, updateList] = useGloboState('list', ['milk'])
   const mutateList = () => {
     list.push('eggs')
@@ -44,7 +44,7 @@ const TodoList = props => {
   )
 }
 
-const AddressBook = props => {
+const AddressBook = () => {
   const [fields, updateFields] = useGloboState('fields.user1', {
     first: 'Darth',
     last: 'Vader',
@@ -63,7 +63,7 @@ const AddressBook = props => {
   )
 }
 
-describe('HookedOnRedux', () => {
+describe('Globostate', () => {
   it('should increment and deincrement a counter', () => {
     const App = () =>
       <Provider>
