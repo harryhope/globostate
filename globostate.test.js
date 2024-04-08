@@ -122,4 +122,17 @@ describe('Globostate', () => {
     fireEvent.click(update)
     expect(getNodeText(details)).toBe('Darth Maul Hoth 12345')
   })
+  it('should throw an error if used outside of a Provider', () => {
+    const App = () => {
+      try {
+        useGloboState('app.counterValue', 0)
+      } catch (err) {
+        return <div data-testid='error'>{err.message}</div>
+      }
+    }
+
+    const { getByTestId } = render(<App />)
+
+    expect(getNodeText(getByTestId('error'))).toBe('useGloboState must be used within a Provider')
+  })
 })

@@ -25,7 +25,12 @@ const createProvider = () => {
   }
 
   const useGloboState = (path, defaultValue) => {
-    const { state, setGlobalState } = useContext(GlobalStateContext)
+    const context = useContext(GlobalStateContext)
+    if (!context) {
+      throw new Error('useGloboState must be used within a Provider')
+    }
+    
+    const { state, setGlobalState } = context  
     const value = get(state, path, defaultValue)
 
     const setValue = (newValue) => {
