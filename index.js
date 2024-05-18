@@ -6,7 +6,7 @@ import cloneDeep from 'lodash/cloneDeep'
 const createProvider = () => {
   const GlobalStateContext = createContext()
 
-  const Provider = ({ children }) => {
+  const Provider = props => {
     const [state, setState] = useState({})
 
     const setGlobalState = (path, value) => {
@@ -17,10 +17,10 @@ const createProvider = () => {
       })
     }
 
-    return (
-      <GlobalStateContext.Provider value={{ state, setGlobalState }}>
-        {children}
-      </GlobalStateContext.Provider>
+    return React.createElement(
+      GlobalStateContext.Provider,
+      { value: { state, setGlobalState } },
+      props.children
     )
   }
 

@@ -1,6 +1,6 @@
 {
   "name": "globostate",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "A path-based state container for React",
   "main": "index.js",
   "types": "index.d.ts",
