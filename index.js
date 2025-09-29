@@ -2,7 +2,6 @@ import React, { createContext, useContext, useMemo, useRef, useCallback } from '
 import { useSyncExternalStore } from 'react'
 import get from 'lodash/get'
 import toPath from 'lodash/toPath'
-import cloneDeep from 'lodash/cloneDeep'
 
 const setAtPath = (root, pathInput, nextVal) => {  
   const keys = Array.isArray(pathInput) ? pathInput : toPath(pathInput)
@@ -108,8 +107,7 @@ const createProvider = () => {
         : Object.is(val, lastRef.current.val)
 
       if (!lastRef.current.has || !equal) {
-        const clonedVal = Array.isArray(val) ? cloneDeep(val) : val
-        lastRef.current = { has: true, val: clonedVal }
+        lastRef.current = { has: true, val: val }
       }
 
       return lastRef.current.val
