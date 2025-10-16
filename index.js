@@ -81,10 +81,10 @@ const createProvider = () => {
     // Stable API in context (doesn't change between renders)
     const api = useMemo(() => ({ getState, setGlobalState, subscribe }), [getState, setGlobalState, subscribe])
 
-    return (
-      <GlobalStateContext.Provider value={api}>
-        {props.children}
-      </GlobalStateContext.Provider>
+    return React.createElement(
+      GlobalStateContext.Provider,
+      { value: api },
+      props.children
     )
   }
 
