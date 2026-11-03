@@ -2,7 +2,10 @@ import React from 'react'
 
 type SetStateFunction<T> = (newValue: T) => void
 
-type UseGloboState = <T>(path: string, defaultValue: T) => [T, SetStateFunction<T>]
+/** A dot/bracket path like 'a.b[0].c', or an array of keys like ['a', 'b', 0, 'c']. */
+export type GloboPath = string | ReadonlyArray<string | number>
+
+type UseGloboState = <T>(path: GloboPath, defaultValue: T) => [T, SetStateFunction<T>]
 
 interface ProviderProps {
   children: React.ReactNode
