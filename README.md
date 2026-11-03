@@ -68,8 +68,6 @@ Because a function passed to the setter is always treated as an updater, store a
 ### Re-renders
 A component re-renders only when the value at its path changes. Arrays and plain objects are compared shallowly, so setting an equal copy doesn't re-render. Everything else, including Dates, Maps, Sets and class instances, is compared by reference, so replace these values rather than mutating them.
 
-The setter keeps the same identity between renders, so it's safe to use in `useEffect` dependencies or to pass to memoized children.
-
 ### Separate stores
 `Provider` and `useGloboState` share one store. To create an independent store, for example for a self-contained widget or library, call `createProvider`:
 
