@@ -263,6 +263,35 @@ describe('Globostate', () => {
     expect(getNodeText(valueDiv)).toBe('updated')
   })
 
+  it('should treat an empty string path as a single key, not the whole state', () => {
+    const EmptyPath = () => {
+      const [value, setValue] = useGloboState('', 'empty-default')
+      return (
+        <div>
+          <div data-testid='empty-value'>{value}</div>
+          <button data-testid='set-empty' onClick={() => setValue('empty-updated')}>Set</button>
+        </div>
+      )
+    }
+
+    const Other = () => {
+      const [value] = useGloboState('other.value', 'other-default')
+      return <div data-testid='other-value'>{value}</div>
+    }
+
+    const { getByTestId } = render(
+      <Provider>
+        <EmptyPath />
+        <Other />
+      </Provider>
+    )
+
+    expect(getNodeText(getByTestId('empty-value'))).toBe('empty-default')
+    fireEvent.click(getByTestId('set-empty'))
+    expect(getNodeText(getByTestId('empty-value'))).toBe('empty-updated')
+    expect(getNodeText(getByTestId('other-value'))).toBe('other-default')
+  })
+
   it('should not rerender components when unrelated state changes', () => {
     let counterRenders = 0
     let todoRenders = 0

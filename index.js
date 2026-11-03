@@ -1,10 +1,25 @@
 import React, { createContext, useContext, useMemo, useRef, useCallback } from 'react'
 import { useSyncExternalStore } from 'react'
-import get from 'lodash/get'
-import toPath from 'lodash/toPath'
 
-const setAtPath = (root, pathInput, nextVal) => {  
-  const keys = Array.isArray(pathInput) ? pathInput : toPath(pathInput)
+// Converts 'a.b[0].c' (or an array of keys) into ['a', 'b', '0', 'c'].
+// A path with no segments (e.g. '') is treated as a single literal key, like lodash.
+const toPath = pathInput =>
+  Array.isArray(pathInput)
+    ? pathInput
+    : String(pathInput).match(/[^.[\]]+/g) || [String(pathInput)]
+
+const getAtPath = (root, pathInput) => {
+  const keys = toPath(pathInput)
+  let curr = root
+  for (let i = 0; i < keys.length; i++) {
+    if (curr == null) return undefined
+    curr = curr[keys[i]]
+  }
+  return curr
+}
+
+const setAtPath = (root, pathInput, nextVal) => {
+  const keys = toPath(pathInput)
 
   const setRec = (curr, i) => {
     if (i === keys.length) {
@@ -63,7 +78,7 @@ const createProvider = () => {
 
     const setGlobalState = useCallback((path, valueOrUpdater, defaultValue) => {
       const prev = storeRef.current.state
-      const prevAtPathVal = get(prev, path)
+      const prevAtPathVal = getAtPath(prev, path)
       const prevAtPath = prevAtPathVal === undefined ? defaultValue : prevAtPathVal
       const nextAtPath = typeof valueOrUpdater === 'function'
         ? valueOrUpdater(prevAtPath)
@@ -99,7 +114,7 @@ const createProvider = () => {
 
     const getSnapshot = useCallback(() => {
       const whole = getState()
-      const selected = get(whole, path)
+      const selected = getAtPath(whole, path)
       const val = selected === undefined ? defaultValue : selected
 
       const equal = typeof val === 'object' && val !== null

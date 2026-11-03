@@ -1,5 +1,5 @@
 # Globostate
-Globostate is a [React hook](https://react.dev/reference/react/hooks) that creates a global, immutable state and allows you to manipulate that state using [lodash's](https://lodash.com) `_.get` and `_.set` functions.
+Globostate is a [React hook](https://react.dev/reference/react/hooks) that creates a global, immutable state and allows you to read and update any part of it by using a path syntax similar to [lodash's](https://lodash.com) `_.get` and `_.set` functions.
 
 **Here's what it looks like:**
 ```js
@@ -41,7 +41,7 @@ root.render(
 ### The Hook
 The `useGloboState` hook works very similarly to React's `useState` hook but global state can be accessed anywhere in the application without drilling down state through props.
 
-`useGloboState` accepts two parameters. The first is the object path. Under the hood globostate uses lodash's `_.get` and `_.set` functions to modify parts of the global object. The second is an initial state, similar to `useState`'s only parameter.
+`useGloboState` accepts two parameters. The first is the object path, written with dots and bracket indexes (`'lists.todos[0].title'`) or as an array of keys (`['lists', 'todos', 0, 'title']`). Updates are immutable: only the objects along that path are copied. The second is an initial state, similar to `useState`'s only parameter.
 
 ```js
 const [todos, setTodos] = useGloboState('appState.lists.todos', [])

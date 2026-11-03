@@ -1,6 +1,6 @@
 import React from 'react'
 import { createRoot } from 'react-dom/client'
-import { Provider, useGloboState } from '../index'
+import { Provider, useGloboState } from '../index.js'
 
 const App = props => {
   const [value, updateValue] = useGloboState('app.counterValue', 0)
