@@ -1,11 +1,21 @@
-# This workflow will run tests using node and then publish a package to GitHub Packages when a release is created
-# For more information see: https://docs.github.com/en/actions/publishing-packages/publishing-nodejs-packages
+# Runs the tests, then STAGES the package on npm when a GitHub release is published.
+# A staged version isn't installable until a maintainer approves it with 2FA:
+#   npm stage list
+#   npm stage approve <stage-id>
+# So a compromised workflow can't ship a release on its own.
+#
+# Authenticates with npm trusted publishing (OIDC), so no npm token secret is needed.
+# One-time setup: on npmjs.com, add this repo and "npm-publish.yml" as the package's
+# trusted publisher, with "Allow npm publish" and "Allow npm dist-tag" both unchecked.
+# See https://docs.npmjs.com/trusted-publishers and https://docs.npmjs.com/cli/commands/npm-stage
 
-name: Node.js Package
+name: Stage npm release
 
 on:
   release:
-    types: [created]
+    # "published" fires for releases created directly and for drafts that are published later.
+    # ("created" never fires for drafts.)
+    types: [published]
 
 jobs:
   build:
@@ -19,19 +29,21 @@ jobs:
       - run: npm test
       - run: npm run test:node
 
-  publish-npm:
+  stage-npm:
     needs: build
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write
+      id-token: write # lets npm verify this workflow via OIDC
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # npm 12 (installed below) requires Node 24.15+
+          node-version: 24
           registry-url: https://registry.npmjs.org/
+      # `npm stage` first shipped in npm 12; Node 24 bundles an older npm
+      - run: npm install -g npm@12
       - run: npm ci
-      - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{secrets.npm_token}}
+      # Trusted publishing adds provenance automatically
+      - run: npm stage publish
