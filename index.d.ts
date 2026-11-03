@@ -1,6 +1,7 @@
 import React from 'react'
 
-type SetStateFunction<T> = (newValue: T) => void
+/** Pass a new value, or an updater that receives the current value (or the default). */
+type SetStateFunction<T> = (newValue: T | ((prev: T) => T)) => void
 
 /** A dot/bracket path like 'a.b[0].c', or an array of keys like ['a', 'b', 0, 'c']. */
 export type GloboPath = string | ReadonlyArray<string | number>

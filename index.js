@@ -18,6 +18,9 @@ const getAtPath = (root, pathInput) => {
   return curr
 }
 
+// Only canonical non-negative integers ('0', '12') create arrays; '1e3', '-1', '' and ' ' don't.
+const isArrayIndex = key => /^(?:0|[1-9]\d*)$/.test(String(key))
+
 const setAtPath = (root, pathInput, nextVal) => {
   const keys = toPath(pathInput)
 
@@ -30,7 +33,7 @@ const setAtPath = (root, pathInput, nextVal) => {
     const child = curr != null ? curr[key] : undefined
     const updatedChild = setRec(child, i + 1)
 
-    const isIndex = Number.isInteger(+key)
+    const isIndex = isArrayIndex(key)
     const base =
       curr == null
         ? isIndex ? [] : {}
@@ -43,9 +46,20 @@ const setAtPath = (root, pathInput, nextVal) => {
   return setRec(root, 0)
 }
 
+const isPlainObject = v => {
+  const proto = Object.getPrototypeOf(v)
+  return proto === Object.prototype || proto === null
+}
+
+// Shallow comparison is only meaningful for two arrays or two plain objects.
+// Dates, Maps, Sets and class instances have no own enumerable keys to compare,
+// so they (and array-vs-object pairs) fall back to reference equality.
 const shallowEqual = (a, b) => {
   if (Object.is(a, b)) return true
   if (typeof a !== 'object' || a === null || typeof b !== 'object' || b === null) return false
+  const bothArrays = Array.isArray(a) && Array.isArray(b)
+  const bothPlain = !Array.isArray(a) && !Array.isArray(b) && isPlainObject(a) && isPlainObject(b)
+  if (!bothArrays && !bothPlain) return false
   const ak = Object.keys(a)
   const bk = Object.keys(b)
   if (ak.length !== bk.length) return false
@@ -109,30 +123,35 @@ const createProvider = () => {
     
     const { getState, subscribe, setGlobalState } = ctx
 
+    // Parse the path once per distinct path, not on every store change. Keying on
+    // a string means inline array paths (['a', 'b']) don't produce new callbacks.
+    const pathKey = Array.isArray(path) ? '\u0000' + path.join('\u0000') : String(path)
+    const keys = useMemo(() => toPath(path), [pathKey]) // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Inline defaults (useGloboState('list', [])) are a new object every render.
+    // Read the latest one through a ref so the getter and setter stay stable.
+    const defaultRef = useRef(defaultValue)
+    defaultRef.current = defaultValue
+
     // Memoize the last selected value so useSyncExternalStore can skip re-renders
     const lastRef = useRef({ has: false, val: undefined })
 
     const getSnapshot = useCallback(() => {
-      const whole = getState()
-      const selected = getAtPath(whole, path)
-      const val = selected === undefined ? defaultValue : selected
+      const selected = getAtPath(getState(), keys)
+      const val = selected === undefined ? defaultRef.current : selected
 
-      const equal = typeof val === 'object' && val !== null
-        ? shallowEqual(val, lastRef.current.val)
-        : Object.is(val, lastRef.current.val)
-
-      if (!lastRef.current.has || !equal) {
+      if (!lastRef.current.has || !shallowEqual(val, lastRef.current.val)) {
         lastRef.current = { has: true, val: val }
       }
 
       return lastRef.current.val
-    }, [getState, path, defaultValue])
+    }, [getState, keys])
 
     const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot)
-    
+
     const setValue = useCallback(newValue => {
-      setGlobalState(path, newValue, defaultValue)
-    }, [path, defaultValue,setGlobalState])
+      setGlobalState(keys, newValue, defaultRef.current)
+    }, [keys, setGlobalState])
 
     return [value, setValue]
   }

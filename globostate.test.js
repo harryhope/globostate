@@ -496,4 +496,122 @@ describe('Globostate', () => {
     fireEvent.click(getByTestId('modify-object'))
     expect(getByTestId('object-prop').textContent).toBe('new-prop')
   })
+
+  it('should re-render when a Date, Map or Set is replaced', () => {
+    const Values = () => {
+      const [date, setDate] = useGloboState('when', new Date(1))
+      const [map, setMap] = useGloboState('lookup', new Map())
+      const [set, setSet] = useGloboState('tags', new Set())
+      return (
+        <div>
+          <div data-testid='date'>{date.getTime()}</div>
+          <div data-testid='map'>{map.size}</div>
+          <div data-testid='set'>{set.size}</div>
+          <button data-testid='update' onClick={() => {
+            setDate(new Date(2))
+            setMap(new Map([['a', 1]]))
+            setSet(new Set(['x', 'y']))
+          }}>Update</button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<Provider><Values /></Provider>)
+    fireEvent.click(getByTestId('update'))
+
+    expect(getNodeText(getByTestId('date'))).toBe('2')
+    expect(getNodeText(getByTestId('map'))).toBe('1')
+    expect(getNodeText(getByTestId('set'))).toBe('2')
+  })
+
+  it('should not treat an empty object and an empty array as equal', () => {
+    const Shape = () => {
+      const [shape, setShape] = useGloboState('shape', {})
+      return (
+        <div>
+          <div data-testid='kind'>{Array.isArray(shape) ? 'array' : 'object'}</div>
+          <button data-testid='to-array' onClick={() => setShape([])}>To array</button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<Provider><Shape /></Provider>)
+    expect(getNodeText(getByTestId('kind'))).toBe('object')
+    fireEvent.click(getByTestId('to-array'))
+    expect(getNodeText(getByTestId('kind'))).toBe('array')
+  })
+
+  it('should keep the setter stable across renders with inline defaults and array paths', () => {
+    const listSetters = new Set()
+    const arrayPathSetters = new Set()
+
+    const Stable = () => {
+      const [, setList] = useGloboState('todos', [])
+      const [, setDeep] = useGloboState(['deep', 'path'], { a: 1 })
+      const [count, setCount] = useGloboState('renders', 0)
+      listSetters.add(setList)
+      arrayPathSetters.add(setDeep)
+      return <button data-testid='rerender' onClick={() => setCount(c => c + 1)}>{count}</button>
+    }
+
+    const { getByTestId } = render(<Provider><Stable /></Provider>)
+    fireEvent.click(getByTestId('rerender'))
+    fireEvent.click(getByTestId('rerender'))
+
+    expect(getNodeText(getByTestId('rerender'))).toBe('2')
+    expect(listSetters.size).toBe(1)
+    expect(arrayPathSetters.size).toBe(1)
+  })
+
+  it('should use the latest default value and pass it to updaters', () => {
+    const Child = ({ fallback }) => {
+      const [value, setValue] = useGloboState('unset.value', fallback)
+      return (
+        <div>
+          <div data-testid='fallback-value'>{value}</div>
+          <button data-testid='append' onClick={() => setValue(v => v + '!')}>Append</button>
+        </div>
+      )
+    }
+
+    const Parent = () => {
+      const [fallback, setFallback] = React.useState('first')
+      return (
+        <div>
+          <Child fallback={fallback} />
+          <button data-testid='change-fallback' onClick={() => setFallback('second')}>Change</button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<Provider><Parent /></Provider>)
+    expect(getNodeText(getByTestId('fallback-value'))).toBe('first')
+    fireEvent.click(getByTestId('change-fallback'))
+    expect(getNodeText(getByTestId('fallback-value'))).toBe('second')
+    fireEvent.click(getByTestId('append'))
+    expect(getNodeText(getByTestId('fallback-value'))).toBe('second!')
+  })
+
+  it('should only create arrays for canonical integer keys', () => {
+    const Keys = () => {
+      const [, setSci] = useGloboState('sci.1e3', null)
+      const [, setNeg] = useGloboState('neg.-1', null)
+      const [, setIdx] = useGloboState('idx.2', null)
+      const [sci] = useGloboState('sci', null)
+      const [neg] = useGloboState('neg', null)
+      const [idx] = useGloboState('idx', null)
+      return (
+        <div>
+          <div data-testid='kinds'>
+            {[sci, neg, idx].map(v => (v === null ? 'null' : Array.isArray(v) ? 'array' : 'object')).join(',')}
+          </div>
+          <button data-testid='set-keys' onClick={() => { setSci('a'); setNeg('b'); setIdx('c') }}>Set</button>
+        </div>
+      )
+    }
+
+    const { getByTestId } = render(<Provider><Keys /></Provider>)
+    fireEvent.click(getByTestId('set-keys'))
+    expect(getNodeText(getByTestId('kinds'))).toBe('object,object,array')
+  })
 })
